@@ -53,7 +53,7 @@ createRoot(document.getElementById("root")).render(
         <Route path="*" element={<NoPage />} />
 
 
-        <Route
+        {/* <Route
           path="/admin"
           element={
             // <ProtectedRoute>
@@ -62,7 +62,7 @@ createRoot(document.getElementById("root")).render(
           }
         >
           <Route index element={<Dashboard />} />
-        </Route>
+        </Route> */}
 
 
 
