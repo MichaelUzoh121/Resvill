@@ -40,25 +40,20 @@ createRoot(document.getElementById("root")).render(
         {/* <Route path="login" element={<Login />} /> */}
         <Route path="*" element={<NoPage />} />
 
-        {/* <Route path="/mega" element={<MegaLayout />}>
-          <Route index element={<MHome />} />
-          <Route path="about" element={<MAbout />} />
-          <Route path="research" element={<Research />} />
-          <Route path="governance-index" element={<Governance />} />
-          <Route path="model-evaluation" element={<Model />} />
-          <Route path="policy-tracker" element={<PolicyTrack />} />
-        </Route> */}
 
-        {/* <Route
+        <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            // <ProtectedRoute>
               <AdminLayout />
-            </ProtectedRoute>
+            // </ProtectedRoute>
           }
         >
           <Route index element={<Dashboard />} />
-        </Route> */}
+        </Route>
+
+
+
       </Routes>
     </BrowserRouter>
   </StrictMode>,
