@@ -14,9 +14,6 @@ import Gallery from "./gallery/Gallery";
 import Faq from "./faq/Faq";
 import Contact from "./contact/Contact";
 
-
-
-
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
@@ -36,16 +33,6 @@ createRoot(document.getElementById("root")).render(
           <Route path="gallery" element={<Gallery />} />
           <Route path="faq" element={<Faq />} />
           <Route path="contact" element={<Contact />} />
-
-          {/* <Route path="about" element={<About />} /> */}
-          {/* <Route
-            path="consultancy-services"
-            element={<ConsultancyServices />}
-          />
-          <Route path="global-contribution" element={<GlobalContribution />} /> */}
-          {/* <Route path="contact" element={<Contact />} /> */}
-          {/* <Route path="fellowship" element={<Fellowship />} /> */}
-          {/* <Route path="ai-literacy-program" element={<Facilitators />} /> */}
         </Route>
         {/* <Route path="privacy-policy" element={<PrivacyPolicy />} /> */}
         {/* <Route path="terms-of-service" element={<Terms />} /> */}
