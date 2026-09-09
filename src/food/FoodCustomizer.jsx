@@ -2,47 +2,44 @@ import React, { useMemo, useState } from "react";
 import { Minus, Plus, ShoppingBag } from "lucide-react";
 import { toast } from "react-hot-toast";
 import FoodPrice from "./FoodPrice";
+import { useCart } from "../context/CartContext";
 
 function FoodCustomizer({ food, onAddToCart }) {
+  const { addItem } = useCart();
+
   const [quantity, setQuantity] = useState(1);
 
   const [selectedSize, setSelectedSize] = useState(
-    food?.options?.sizes?.[0] || null
+    food?.options?.sizes?.[0] || null,
   );
 
   const [selectedExtras, setSelectedExtras] = useState([]);
 
   const extrasTotal = useMemo(() => {
     return selectedExtras.reduce(
-      (total, extra) => total + extra.price,
-      0
+      (total, extra) => total + Number(extra.price || 0),
+      0,
     );
   }, [selectedExtras]);
 
-  const totalPrice = useMemo(() => {
-    const sizePrice = selectedSize?.price || 0;
+  const unitPrice = useMemo(() => {
+    const basePrice = Number(food?.price || 0);
+    const sizePrice = Number(selectedSize?.price || 0);
 
-    return (
-      (food?.price || 0) +
-      sizePrice +
-      extrasTotal
-    ) * quantity;
-  }, [
-    food?.price,
-    selectedSize,
-    extrasTotal,
-    quantity,
-  ]);
+    return basePrice + sizePrice + extrasTotal;
+  }, [food?.price, selectedSize, extrasTotal]);
+
+  const totalPrice = unitPrice * quantity;
 
   const toggleExtra = (extra) => {
     setSelectedExtras((current) => {
       const exists = current.some(
-        (item) => item.name === extra.name
+        (item) => item.name === extra.name,
       );
 
       if (exists) {
         return current.filter(
-          (item) => item.name !== extra.name
+          (item) => item.name !== extra.name,
         );
       }
 
@@ -51,9 +48,11 @@ function FoodCustomizer({ food, onAddToCart }) {
   };
 
   const handleAddToCart = () => {
-    if (!food?.available) return;
+    if (!food?.available) {
+      return;
+    }
 
-    onAddToCart?.({
+    const cartItem = {
       foodId: food.id,
       name: food.name,
       image: food.image,
@@ -61,13 +60,22 @@ function FoodCustomizer({ food, onAddToCart }) {
       size: selectedSize,
       extras: selectedExtras,
       quantity,
+      unitPrice,
       totalPrice,
-    });
+    };
+
+    if (onAddToCart) {
+      onAddToCart(cartItem);
+    } else {
+      addItem(cartItem);
+    }
 
     toast.success(`${food.name} added to cart`);
   };
 
-  if (!food) return null;
+  if (!food) {
+    return null;
+  }
 
   return (
     <div className="space-y-7 rounded-2xl border border-dark-100 bg-white p-5 shadow-soft sm:p-6">
@@ -132,7 +140,7 @@ function FoodCustomizer({ food, onAddToCart }) {
           <div className="space-y-2">
             {food.options.extras.map((extra) => {
               const selected = selectedExtras.some(
-                (item) => item.name === extra.name
+                (item) => item.name === extra.name,
               );
 
               return (
@@ -178,7 +186,7 @@ function FoodCustomizer({ food, onAddToCart }) {
             type="button"
             onClick={() =>
               setQuantity((current) =>
-                Math.max(1, current - 1)
+                Math.max(1, current - 1),
               )
             }
             className="flex h-10 w-10 items-center justify-center text-dark-600 transition-colors hover:text-primary-500"
@@ -211,7 +219,7 @@ function FoodCustomizer({ food, onAddToCart }) {
         <FoodPrice price={totalPrice} />
       </div>
 
-      {/* Add */}
+      {/* Add to Cart */}
       <button
         type="button"
         onClick={handleAddToCart}
@@ -233,4 +241,5 @@ function FoodCustomizer({ food, onAddToCart }) {
 }
 
 export default FoodCustomizer;
+
 

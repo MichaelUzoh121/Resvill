@@ -115,9 +115,13 @@ import { Link } from "react-router-dom";
 import { Search, ShoppingBag, Menu, X } from "lucide-react";
 import Navigation from "./Navigation";
 import Sidebar from "./Sidebar";
+import { useCart } from "../context/CartContext";
+
 
 function Header() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { itemCount } = useCart();
+
 
   return (
     <>
@@ -159,9 +163,10 @@ function Header() {
               <ShoppingBag size={20} strokeWidth={1.8} />
 
               {/* Mock cart count */}
-              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-[9px] font-bold text-white">
-                2
+             <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary-500 px-1 text-[9px] font-bold text-white">
+                 {itemCount}
               </span>
+
             </Link>
 
             {/* Login */}

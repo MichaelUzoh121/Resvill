@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Check, Plus, ShoppingBag } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { useCart } from "../context/CartContext";
 
 function AddToCartButton({
   food,
@@ -10,6 +11,7 @@ function AddToCartButton({
   fullWidth = true,
 }) {
   const [added, setAdded] = useState(false);
+  const { addItem } = useCart();
 
   const handleAdd = () => {
     if (disabled || !food) return;
@@ -17,15 +19,20 @@ function AddToCartButton({
     const cartItem = {
       foodId: food.id,
       name: food.name,
-      price: food.price,
+      basePrice: food.price,
       image: food.image,
       quantity,
+      size: food.options?.sizes?.[0] || null,
+      extras: [],
     };
 
-    onAdd?.(cartItem);
+    if (onAdd) {
+      onAdd(cartItem);
+    } else {
+      addItem(cartItem);
+    }
 
     setAdded(true);
-
     toast.success(`${food.name} added to cart`);
 
     setTimeout(() => {
@@ -44,8 +51,8 @@ function AddToCartButton({
         disabled
           ? "cursor-not-allowed bg-dark-100 text-dark-400"
           : added
-          ? "bg-success text-white"
-          : "bg-primary-500 text-white hover:bg-primary-600 hover:shadow-hover"
+            ? "bg-success text-white"
+            : "bg-primary-500 text-white hover:bg-primary-600 hover:shadow-hover"
       }`}
     >
       {added ? (
@@ -59,9 +66,7 @@ function AddToCartButton({
           <span className="hidden sm:inline">
             Add to Cart
           </span>
-          <span className="sm:hidden">
-            Add
-          </span>
+          <span className="sm:hidden">Add</span>
           <Plus size={15} />
         </>
       )}
@@ -70,4 +75,3 @@ function AddToCartButton({
 }
 
 export default AddToCartButton;
-

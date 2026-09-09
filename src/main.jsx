@@ -1,8 +1,12 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import "./index.css";
+
 import Layout from "./Layout";
+import { CartProvider } from "./context/CartContext";
+
 import Home from "./home/Home";
 import NoPage from "./components/NoPage";
 import Menu from "./menu/Menu";
@@ -14,59 +18,81 @@ import Gallery from "./gallery/Gallery";
 import Faq from "./faq/Faq";
 import Contact from "./contact/Contact";
 
+import Cart from "./cart/Cart";
+import Checkout from "./checkout/Checkout";
+import TrackOrder from "./orders/TrackOrder";
 
+import {
+  OrderConfirmation,
+  OrderTracker,
+} from "./orders/OrderPages";
 
+import Login from "./auth/Login";
+import Register from "./auth/Register";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
+    <CartProvider>
+      <BrowserRouter>
+        <Toaster
+          position="top-right"
+          toastOptions={{ duration: 2600 }}
+        />
 
-          <Route path="menu" element={<Menu />} />
-          <Route path="group-order" element={<GroupOrder />} />
-          <Route path="reservation" element={<Reservation />} />
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
 
-           <Route
-            path="menu/:slug"
-            element={<FoodCustomization />}
+            <Route path="menu" element={<Menu />} />
+
+            <Route
+              path="menu/:slug"
+              element={<FoodCustomization />}
+            />
+
+            <Route path="cart" element={<Cart />} />
+
+            <Route path="checkout" element={<Checkout />} />
+
+            <Route
+              path="group-order"
+              element={<GroupOrder />}
+            />
+
+            <Route
+              path="reservation"
+              element={<Reservation />}
+            />
+
+            <Route path="about" element={<About />} />
+
+            <Route path="gallery" element={<Gallery />} />
+
+            <Route path="faq" element={<Faq />} />
+
+            <Route path="contact" element={<Contact />} />
+
+            <Route path="login" element={<Login />} />
+
+            <Route path="register" element={<Register />} />
+          </Route>
+
+          <Route
+            path="order-confirmation/:id"
+            element={<OrderConfirmation />}
           />
-          <Route path="about" element={<About />} />
-          <Route path="gallery" element={<Gallery />} />
-          <Route path="faq" element={<Faq />} />
-          <Route path="contact" element={<Contact />} />
 
-          {/* <Route path="about" element={<About />} /> */}
-          {/* <Route
-            path="consultancy-services"
-            element={<ConsultancyServices />}
+          <Route path="track-order" element={<TrackOrder />} />
+
+
+          <Route
+            path="track/:id"
+            element={<OrderTracker />}
           />
-          <Route path="global-contribution" element={<GlobalContribution />} /> */}
-          {/* <Route path="contact" element={<Contact />} /> */}
-          {/* <Route path="fellowship" element={<Fellowship />} /> */}
-          {/* <Route path="ai-literacy-program" element={<Facilitators />} /> */}
-        </Route>
-        {/* <Route path="privacy-policy" element={<PrivacyPolicy />} /> */}
-        {/* <Route path="terms-of-service" element={<Terms />} /> */}
-        {/* <Route path="login" element={<Login />} /> */}
-        <Route path="*" element={<NoPage />} />
 
-
-        {/* <Route
-          path="/admin"
-          element={
-            // <ProtectedRoute>
-              <AdminLayout />
-            // </ProtectedRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
-        </Route> */}
-
-
-
-      </Routes>
-    </BrowserRouter>
+          <Route path="*" element={<NoPage />} />
+        </Routes>
+      </BrowserRouter>
+    </CartProvider>
   </StrictMode>,
 );

@@ -2,15 +2,20 @@ import React from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
+
+
 import foods from "../data/foods";
 import FoodCustomizer from "./FoodCustomizer";
 import FoodImage from "./FoodImage";
 import FoodPrice from "./FoodPrice";
 import FoodRating from "./FoodRating";
 import FoodCategory from "./FoodCategory";
+import { useCart } from "../context/CartContext";
+
 
 function FoodCustomization({ onAddToCart }) {
   const { slug } = useParams();
+  const { addItem } = useCart();
 
   const food = foods.find((item) => item.slug === slug);
 
