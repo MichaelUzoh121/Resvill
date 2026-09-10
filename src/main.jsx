@@ -76,6 +76,8 @@ createRoot(document.getElementById("root")).render(
             <Route path="login" element={<Login />} />
 
             <Route path="register" element={<Register />} />
+
+            <Route path="user/profile" element={<Profile />} />
           </Route>
 
           <Route
@@ -93,11 +95,6 @@ createRoot(document.getElementById("root")).render(
 
           <Route path="*" element={<NoPage />} />
 
-        </Routes>
-
-
-        <Routes path="/user">
-          <Route path="/user/profile" element={<Profile/>} />
         </Routes>
 
       </BrowserRouter>

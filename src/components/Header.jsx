@@ -112,7 +112,7 @@
 
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, ShoppingBag, Menu, X } from "lucide-react";
+import { Search, ShoppingBag, Menu, X, UserRound } from "lucide-react";
 import Navigation from "./Navigation";
 import Sidebar from "./Sidebar";
 import { useCart } from "../context/CartContext";
@@ -167,6 +167,16 @@ function Header() {
                  {itemCount}
               </span>
 
+            </Link>
+
+            {/* Profile */}
+            <Link
+              to="/user/profile"
+              aria-label="Open profile"
+              className="flex items-center gap-2 px-2 text-sm font-semibold text-dark-800 transition-colors hover:text-primary-500"
+            >
+              <UserRound size={18} strokeWidth={1.8} />
+              Profile
             </Link>
 
             {/* Login */}
@@ -228,4 +238,3 @@ function Header() {
 }
 
 export default Header;
-

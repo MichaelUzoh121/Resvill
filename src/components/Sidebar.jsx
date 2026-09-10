@@ -156,6 +156,7 @@ import {
   Truck,
   ChevronDown,
   Info,
+  UserRound,
 } from "lucide-react";
 
 const navigationLinks = [
@@ -324,6 +325,19 @@ function Sidebar({ isOpen, onClose }) {
             >
               <Search size={19} strokeWidth={2} />
               Search Menu
+            </Link>
+
+            <Link
+              to="/user/profile"
+              onClick={onClose}
+              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-extrabold transition-colors ${
+                location.pathname === "/user/profile"
+                  ? "bg-primary-50 text-primary-500"
+                  : "text-dark-800 hover:bg-dark-50 hover:text-primary-500"
+              }`}
+            >
+              <UserRound size={19} strokeWidth={2} />
+              My Profile
             </Link>
           </div>
 
