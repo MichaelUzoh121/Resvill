@@ -29,6 +29,7 @@ import {
 
 import Login from "./auth/Login";
 import Register from "./auth/Register";
+import Profile from "./user/profile/Profile";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -91,7 +92,14 @@ createRoot(document.getElementById("root")).render(
           />
 
           <Route path="*" element={<NoPage />} />
+
         </Routes>
+
+
+        <Routes path="/user">
+          <Route path="/user/profile" element={<Profile/>} />
+        </Routes>
+
       </BrowserRouter>
     </CartProvider>
   </StrictMode>,
