@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Check,
-  Clock3,
   PackageCheck,
   Truck,
 } from "lucide-react";
@@ -10,8 +9,8 @@ import {
   useLocation,
   useParams,
 } from "react-router-dom";
-import { formatNaira } from "../context/CartContext";
-import { getOrderByCredentials } from "../utils/orders";
+import { formatNaira, useCart } from "../context/CartContext";
+import { getLastOrder, getOrderByCredentials } from "../utils/orders";
 
 const prettyDate = (value) => {
   return value
@@ -28,10 +27,18 @@ export function OrderConfirmation() {
     useLocation().search,
   );
 
-  const order = getOrderByCredentials(
+  const token = query.get("token");
+  const matchedOrder = getOrderByCredentials(
     id,
-    query.get("token"),
+    token,
   );
+  const lastOrder = getLastOrder();
+  const order = matchedOrder || (lastOrder?.id === id ? lastOrder : null);
+  const { clearCart } = useCart();
+
+  useEffect(() => {
+    if (order) clearCart();
+  }, [order?.id]);
 
   if (!order) {
     return <InvalidOrder />;
@@ -71,9 +78,22 @@ export function OrderConfirmation() {
         </div>
 
         <p className="mt-4 text-sm text-dark-500">
-          We sent a confirmation to{" "}
-          {order.customer.email}. Keep your private tracking link safe.
+          We sent a confirmation to {order.customer.email}. Keep the private
+          tracking details below safe.
         </p>
+
+        <div className="mt-5 rounded-xl border border-primary-100 bg-primary-50 p-4 text-left">
+          <p className="text-xs font-bold uppercase tracking-wider text-primary-700">
+            Private tracking token
+          </p>
+          <p className="mt-2 break-all rounded-lg bg-white px-3 py-2 font-mono text-xs text-dark-800">
+            {order.trackingToken}
+          </p>
+          <p className="mt-2 text-xs leading-5 text-primary-800">
+            You need this token together with order #{order.id} if you use the
+            Track Order form later.
+          </p>
+        </div>
 
         <Link
           to={`/track/${order.id}?token=${order.trackingToken}`}
@@ -134,7 +154,7 @@ export function OrderTracker() {
 
         <section className="mt-8 rounded-2xl border border-dark-100 bg-white p-5 shadow-soft sm:p-8">
           {order.statuses.map((status, index) => {
-            const complete = index <= activeIndex;
+            const complete = index < activeIndex;
             const current = index === activeIndex;
 
             return (
@@ -146,7 +166,7 @@ export function OrderTracker() {
                   {index < order.statuses.length - 1 && (
                     <span
                       className={`absolute top-8 h-full w-px ${
-                        complete
+                        index < activeIndex
                           ? "bg-primary-500"
                           : "bg-dark-200"
                       }`}
@@ -157,13 +177,17 @@ export function OrderTracker() {
                     className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 ${
                       complete
                         ? "border-primary-500 bg-primary-500 text-white"
-                        : "border-dark-200 bg-white text-dark-300"
+                        : current
+                          ? "border-primary-500 bg-primary-500 text-white"
+                          : "border-dark-200 bg-white text-dark-300"
                     }`}
                   >
                     {complete ? (
                       <Check size={16} />
+                    ) : current ? (
+                      <span className="h-2.5 w-2.5 rounded-full bg-white" />
                     ) : (
-                      <Clock3 size={15} />
+                      <span className="h-2.5 w-2.5 rounded-full border-2 border-dark-300" />
                     )}
                   </span>
                 </div>

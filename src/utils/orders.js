@@ -1,4 +1,5 @@
 const ORDERS_KEY = "resvill_orders_v1";
+const LAST_ORDER_KEY = "resvill_last_order_v1";
 
 const readOrders = () => {
   try { return JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]"); } catch { return []; }
@@ -33,8 +34,17 @@ export const createOrder = ({ customer, items, totals, deliveryMethod }) => {
     createdAt: now,
   };
   localStorage.setItem(ORDERS_KEY, JSON.stringify([order, ...orders]));
+  localStorage.setItem(LAST_ORDER_KEY, JSON.stringify(order));
   return order;
 };
 
 export const getOrderByCredentials = (id, token) => readOrders().find((order) => order.id === id && order.trackingToken === token);
+export const getOrderById = (id) => readOrders().find((order) => order.id === id);
+export const getLastOrder = () => {
+  try {
+    return JSON.parse(localStorage.getItem(LAST_ORDER_KEY) || "null");
+  } catch {
+    return null;
+  }
+};
 export const getOrders = () => readOrders();
