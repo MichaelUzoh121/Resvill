@@ -192,15 +192,12 @@ function Login() {
                   Remember me
                 </label>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    toast("Password reset will be connected later.")
-                  }
-                  className="font-bold text-primary-500 hover:text-primary-600"
-                >
-                  Forgot password?
-                </button>
+                <Link
+                       to="/forgot-password"
+                          className="font-bold text-primary-500 hover:text-primary-600"
+                          >
+                           Forgot password?
+                            </Link>
               </div>
 
               <button
