@@ -1,18 +1,50 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Camera, Mail, Pencil, Phone } from "lucide-react";
 
-function Row1({ name = "Michael Uzoh", initials = "MU" }) {
+function Row1({
+  name = "Michael Uzoh",
+  initials = "MU",
+  email = "michael@example.com",
+  phone = "+234 801 234 5678",
+  photoUrl = "",
+  onPhotoChange,
+}) {
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !onPhotoChange) return;
+    onPhotoChange(file);
+  };
+
   return (
     <section className="overflow-hidden rounded-2xl border border-dark-200 bg-white shadow-soft">
       <div className="h-24 bg-gradient-to-r from-primary-600 via-primary-500 to-accent-500 sm:h-32" />
       <div className="relative px-5 pb-5 sm:px-7 sm:pb-7">
         <div className="-mt-12 flex flex-col gap-5 sm:-mt-14 sm:flex-row sm:items-end sm:justify-between">
           <div className="flex items-end gap-4">
-            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl border-4 border-white bg-primary-100 font-heading text-2xl font-extrabold text-primary-600 shadow-card sm:h-28 sm:w-28">
-              {initials}
+            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-primary-100 font-heading text-2xl font-extrabold text-primary-600 shadow-card sm:h-28 sm:w-28">
+              {photoUrl ? (
+                <img
+                  src={photoUrl}
+                  alt={`${name}'s profile photo`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initials
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
               <button
                 type="button"
                 aria-label="Change profile photo"
+                onClick={() => fileInputRef.current?.click()}
                 className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full border-4 border-white bg-primary-500 text-white shadow-sm transition hover:bg-primary-600"
               >
                 <Camera size={15} />
@@ -26,6 +58,7 @@ function Row1({ name = "Michael Uzoh", initials = "MU" }) {
           </div>
           <button
             type="button"
+            onClick={() => fileInputRef.current?.click()}
             className="inline-flex w-fit items-center gap-2 rounded-xl border border-dark-200 px-4 py-2.5 text-sm font-bold text-dark-700 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600"
           >
             <Pencil size={15} />
@@ -36,11 +69,11 @@ function Row1({ name = "Michael Uzoh", initials = "MU" }) {
         <div className="mt-6 grid gap-3 border-t border-dark-100 pt-5 sm:grid-cols-2">
           <div className="flex items-center gap-3 text-sm text-dark-600">
             <Mail size={17} className="text-primary-500" />
-            <span>michael@example.com</span>
+            <span>{email || "Add your email"}</span>
           </div>
           <div className="flex items-center gap-3 text-sm text-dark-600">
             <Phone size={17} className="text-primary-500" />
-            <span>+234 801 234 5678</span>
+            <span>{phone || "Add your phone number"}</span>
           </div>
         </div>
       </div>

@@ -4,6 +4,8 @@ import { CheckCircle2, MapPin, ShieldCheck } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { formatNaira, useCart } from "../context/CartContext";
 import { createOrder } from "../utils/orders";
+import { normalizeLocation } from "../utils/address";
+import AddressAutocomplete from "../components/AddressAutocomplete";
 
 const savedProfile = () => {
   try {
@@ -25,7 +27,7 @@ function Checkout() {
     name: profile.name || "",
     email: profile.email || "",
     phone: profile.phone || "",
-    address: profile.address || "",
+    deliveryLocation: normalizeLocation(profile.deliveryAddress || profile.address),
     instructions: "",
   });
 
@@ -45,7 +47,7 @@ function Checkout() {
   const submit = (event) => {
     event.preventDefault();
 
-    if (deliveryMethod === "delivery" && !form.address.trim()) {
+    if (deliveryMethod === "delivery" && !form.deliveryLocation.addressText.trim()) {
       toast.error("Please enter your delivery address.");
       return;
     }
@@ -57,7 +59,17 @@ function Checkout() {
       deliveryMethod,
     });
 
-    localStorage.setItem("resvill_profile_v1", JSON.stringify(form));
+    localStorage.setItem(
+      "resvill_profile_v1",
+      JSON.stringify({
+        ...profile,
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        deliveryAddress: form.deliveryLocation,
+        address: form.deliveryLocation.addressText,
+      }),
+    );
 
     navigate(
       `/order-confirmation/${order.id}?token=${order.trackingToken}`,
@@ -139,18 +151,17 @@ function Checkout() {
               </div>
 
               {deliveryMethod === "delivery" && (
-                <label className="mt-4 block text-sm font-semibold text-dark-700">
-                  Delivery address
-                  <textarea
+                <div className="mt-4">
+                  <AddressAutocomplete
+                    label="Delivery address"
+                    value={form.deliveryLocation}
+                    onChange={(location) =>
+                      setForm((current) => ({ ...current, deliveryLocation: location }))
+                    }
+                    showInstructions
                     required
-                    name="address"
-                    value={form.address}
-                    onChange={update}
-                    rows="3"
-                    placeholder="Street, area, city"
-                    className="mt-2 w-full rounded-xl border border-dark-200 px-4 py-3 font-normal outline-none focus:border-primary-500"
                   />
-                </label>
+                </div>
               )}
 
               <label className="mt-4 block text-sm font-semibold text-dark-700">

@@ -1,30 +1,9 @@
 import React, { useState } from "react";
+import { ArrowLeft, ArrowRight, Mail, MailCheck, Sparkles, TriangleAlert } from "lucide-react";
 import { Link } from "react-router-dom";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Mail,
-  MailCheck,
-  Sparkles,
-  TriangleAlert,
-} from "lucide-react";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// ---------------------------------------------------------------------------
-// Backend contract:
-//
-// POST /api/auth/forgot-password
-// body: { "email": "user@example.com" }
-//
-// The endpoint should ALWAYS respond with the same generic success shape,
-// whether or not an account exists for that email (this avoids leaking
-// which emails are registered):
-//   200 OK  { "message": "If an account exists for this email, we sent a password reset link." }
-//
-// Only return a non-200 for real failures (bad request body, rate limit,
-// server error) - never for "email not found".
-// ---------------------------------------------------------------------------
 async function requestPasswordReset(email) {
   const response = await fetch("/api/auth/forgot-password", {
     method: "POST",
@@ -43,7 +22,7 @@ async function requestPasswordReset(email) {
 function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [fieldError, setFieldError] = useState("");
-  const [status, setStatus] = useState("idle"); // idle | loading | success | error
+  const [status, setStatus] = useState("idle");
   const [serverError, setServerError] = useState("");
 
   const validate = (value) => {
@@ -57,6 +36,7 @@ function ForgotPassword() {
 
     const error = validate(email);
     setFieldError(error);
+
     if (error) return;
 
     setStatus("loading");
@@ -65,8 +45,8 @@ function ForgotPassword() {
     try {
       await requestPasswordReset(email.trim());
       setStatus("success");
-    } catch (err) {
-      setServerError(err.message || "Something went wrong. Please try again.");
+    } catch (error) {
+      setServerError(error.message || "Something went wrong. Please try again.");
       setStatus("error");
     }
   };
@@ -74,7 +54,6 @@ function ForgotPassword() {
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-dark-50/60 px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto grid max-w-6xl overflow-hidden rounded-3xl border border-dark-100 bg-white shadow-card lg:grid-cols-2">
-        {/* Info panel */}
         <section className="relative hidden overflow-hidden bg-dark-950 p-10 text-white lg:flex lg:min-h-[600px] lg:flex-col lg:justify-between">
           <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary-500/25 blur-3xl" />
           <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-accent-500/20 blur-3xl" />
@@ -90,22 +69,19 @@ function ForgotPassword() {
             <div className="mt-20 max-w-md">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-primary-100">
                 <Sparkles size={16} />
-                We've got you covered
+                We&apos;ve got you covered
               </div>
-
               <h1 className="font-heading text-4xl font-extrabold leading-tight xl:text-5xl">
                 Forgot your password? No problem.
               </h1>
-
               <p className="mt-6 text-base leading-8 text-dark-300">
-                Enter the email on your account and we'll send you a link
-                to get back in.
+                Enter the email on your account and we&apos;ll send you a link to
+                get back in.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Form panel */}
         <section className="relative p-6 sm:p-10 lg:p-14">
           <div className="absolute right-6 top-6 h-20 w-20 rounded-full bg-primary-50 blur-2xl" />
 
@@ -126,16 +102,13 @@ function ForgotPassword() {
                 <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-500">
                   <MailCheck size={26} />
                 </div>
-
                 <h2 className="font-heading text-3xl font-extrabold text-dark-950">
                   Check your inbox
                 </h2>
-
                 <p className="mt-4 max-w-sm leading-7 text-dark-500">
-                  If an account exists for this email, we sent a password
-                  reset link.
+                  If an account exists for this email, we sent a password reset
+                  link.
                 </p>
-
                 <Link
                   to="/login"
                   className="mt-8 inline-flex items-center gap-2 font-bold text-primary-500 hover:text-primary-600"
@@ -150,13 +123,11 @@ function ForgotPassword() {
                   <p className="text-sm font-bold uppercase tracking-[0.2em] text-primary-500">
                     Reset password
                   </p>
-
                   <h2 className="mt-3 font-heading text-3xl font-extrabold text-dark-950">
                     Forgot password?
                   </h2>
-
                   <p className="mt-3 leading-7 text-dark-500">
-                    Enter your email and we'll send you a reset link.
+                    Enter your email and we&apos;ll send you a reset link.
                   </p>
                 </div>
 
@@ -169,11 +140,14 @@ function ForgotPassword() {
                         className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400"
                       />
                       <input
+                        required
                         type="email"
                         value={email}
                         onChange={(event) => {
                           setEmail(event.target.value);
-                          if (fieldError) setFieldError(validate(event.target.value));
+                          if (fieldError) {
+                            setFieldError(validate(event.target.value));
+                          }
                         }}
                         placeholder="you@example.com"
                         aria-invalid={Boolean(fieldError)}
@@ -233,3 +207,4 @@ function ForgotPassword() {
 }
 
 export default ForgotPassword;
+

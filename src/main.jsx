@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import "./index.css";
 
@@ -21,6 +21,7 @@ import Contact from "./contact/Contact";
 import Cart from "./cart/Cart";
 import Checkout from "./checkout/Checkout";
 import TrackOrder from "./orders/TrackOrder";
+import OrderHistory from "./orders/OrderHistory";
 
 import {
   OrderConfirmation,
@@ -32,6 +33,17 @@ import Register from "./auth/Register";
 import ForgotPassword from "./auth/ForgotPassword";
 import ResetPassword from "./auth/ResetPassword";
 import Profile from "./user/profile/Profile";
+
+function ProtectedRoute({ children }) {
+  const location = useLocation();
+  const isSignedIn = localStorage.getItem("resvill_auth_v1") === "true";
+
+  if (!isSignedIn) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  return children;
+}
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -58,6 +70,15 @@ createRoot(document.getElementById("root")).render(
             <Route path="checkout" element={<Checkout />} />
 
             <Route
+              path="order-history"
+              element={
+                <ProtectedRoute>
+                  <OrderHistory />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="group-order"
               element={<GroupOrder />}
             />
@@ -79,16 +100,18 @@ createRoot(document.getElementById("root")).render(
 
             <Route path="register" element={<Register />} />
 
-             <Route
-              path="forgot-password"
-              element={<ForgotPassword />}
-            />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+
+            <Route path="reset-password/:token" element={<ResetPassword />} />
 
             <Route
-              path="reset-password/:token"
-              element={<ResetPassword />}
+              path="user/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
             />
-            <Route path="user/profile" element={<Profile />} />
           </Route>
 
           <Route
@@ -112,3 +135,4 @@ createRoot(document.getElementById("root")).render(
     </CartProvider>
   </StrictMode>,
 );
+

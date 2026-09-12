@@ -144,9 +144,9 @@
 
 
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Search,
+  Bell,
   Home,
   Utensils,
   ShoppingBag,
@@ -209,7 +209,38 @@ const navigationLinks = [
 
 function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [expandedMenu, setExpandedMenu] = useState(null);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const isSignedIn = localStorage.getItem("resvill_auth_v1") === "true";
+  const profile = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("resvill_profile_v1") || "{}");
+    } catch {
+      return {};
+    }
+  })();
+  const notifications = [
+    {
+      id: 1,
+      title: "Welcome to Resvill",
+      message: "Your favorite meals are only a few clicks away.",
+      time: "Just now",
+    },
+    {
+      id: 2,
+      title: "Order updates coming soon",
+      message: "You will see your order status here after checkout.",
+      time: "Today",
+    },
+  ];
+
+  const signOut = () => {
+    localStorage.removeItem("resvill_auth_v1");
+    onClose();
+    navigate("/");
+  };
 
   if (!isOpen) return null;
 
@@ -318,27 +349,76 @@ function Sidebar({ isOpen, onClose }) {
               );
             })}
 
-            <Link
-              to="/search"
-              onClick={onClose}
-              className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-extrabold text-dark-800 transition-colors hover:bg-dark-50 hover:text-primary-500"
-            >
-              <Search size={19} strokeWidth={2} />
-              Search Menu
-            </Link>
+            <div>
+              <button
+                type="button"
+                onClick={() => setIsNotificationsOpen((current) => !current)}
+                aria-expanded={isNotificationsOpen}
+                className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-extrabold text-dark-800 transition-colors hover:bg-dark-50 hover:text-primary-500"
+              >
+                <span className="flex items-center gap-3">
+                  <Bell size={19} strokeWidth={2} />
+                  Notifications
+                </span>
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-500 px-1 text-[10px] font-bold text-white">
+                  {notifications.length}
+                </span>
+              </button>
 
-            <Link
-              to="/user/profile"
-              onClick={onClose}
-              className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-extrabold transition-colors ${
-                location.pathname === "/user/profile"
-                  ? "bg-primary-50 text-primary-500"
-                  : "text-dark-800 hover:bg-dark-50 hover:text-primary-500"
-              }`}
-            >
-              <UserRound size={19} strokeWidth={2} />
-              My Profile
-            </Link>
+              {isNotificationsOpen && (
+                <div className="mx-2 space-y-2 rounded-2xl bg-primary-50 p-3">
+                  {notifications.map((notification) => (
+                    <div key={notification.id} className="border-b border-primary-100 pb-2 last:border-0 last:pb-0">
+                      <p className="text-xs font-extrabold text-dark-900">
+                        {notification.title}
+                      </p>
+                      <p className="mt-1 text-[11px] leading-4 text-dark-600">
+                        {notification.message}
+                      </p>
+                      <p className="mt-1 text-[10px] font-bold text-dark-400">
+                        {notification.time}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {isSignedIn && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIsAccountOpen((current) => !current)}
+                  aria-expanded={isAccountOpen}
+                  className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-extrabold text-dark-800 transition-colors hover:bg-dark-50 hover:text-primary-500"
+                >
+                  <span className="flex items-center gap-3">
+                    <UserRound size={19} strokeWidth={2} />
+                    Account
+                  </span>
+                  <ChevronDown size={16} className={isAccountOpen ? "rotate-180" : ""} />
+                </button>
+
+                {isAccountOpen && (
+                  <div className="mx-2 mt-1 rounded-2xl border border-dark-100 bg-dark-50 p-3">
+                    <p className="truncate text-xs font-extrabold text-dark-950">
+                      {profile.name || "Resvill customer"}
+                    </p>
+                    <p className="mt-1 truncate text-[11px] text-dark-500">
+                      {profile.email || "Account details"}
+                    </p>
+                    <div className="mt-2 space-y-1 border-t border-dark-100 pt-2">
+                      <Link to="/user/profile" onClick={onClose} className="block rounded-lg px-2 py-2 text-xs font-bold text-dark-700 hover:bg-white hover:text-primary-500">
+                        Profile
+                      </Link>
+                      <Link to="/order-history" onClick={onClose} className="block rounded-lg px-2 py-2 text-xs font-bold text-dark-700 hover:bg-white hover:text-primary-500">
+                        Order History
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Bottom Card Callout */}
@@ -359,6 +439,16 @@ function Sidebar({ isOpen, onClose }) {
             >
               Order Now
             </Link>
+
+            {isSignedIn ? (
+              <button
+                type="button"
+                onClick={signOut}
+                className="w-full text-center text-xs font-bold text-dark-500 hover:text-primary-500"
+              >
+                Logout
+              </button>
+            ) : null}
           </div>
         </nav>
       </aside>

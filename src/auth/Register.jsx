@@ -53,6 +53,8 @@ function Register() {
         phone: form.phone,
       }),
     );
+    localStorage.setItem("resvill_auth_v1", "true");
+    window.dispatchEvent(new Event("resvill-auth-changed"));
 
     toast.success(
       "Account created successfully. Welcome to Resvill!",
@@ -340,4 +342,6 @@ function Register() {
 }
 
 export default Register;
+
+
 

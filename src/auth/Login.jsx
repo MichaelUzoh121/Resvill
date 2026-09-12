@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
   ArrowRight,
@@ -13,6 +13,7 @@ import {
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,10 +36,12 @@ function Login() {
         email,
       }),
     );
+    localStorage.setItem("resvill_auth_v1", "true");
+    window.dispatchEvent(new Event("resvill-auth-changed"));
 
     setTimeout(() => {
       toast.success("Welcome back to Resvill!");
-      navigate("/checkout");
+      navigate(location.state?.from || "/checkout", { replace: true });
     }, 500);
   };
 
@@ -193,11 +196,11 @@ function Login() {
                 </label>
 
                 <Link
-                       to="/forgot-password"
-                          className="font-bold text-primary-500 hover:text-primary-600"
-                          >
-                           Forgot password?
-                            </Link>
+                  to="/forgot-password"
+                  className="font-bold text-primary-500 hover:text-primary-600"
+                >
+                  Forgot password?
+                </Link>
               </div>
 
               <button
@@ -233,3 +236,5 @@ function Login() {
 }
 
 export default Login;
+
+
