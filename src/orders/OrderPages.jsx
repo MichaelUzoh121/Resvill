@@ -11,7 +11,7 @@ import {
 } from "react-router-dom";
 import { formatNaira, useCart } from "../context/CartContext";
 import { getLastOrder, getOrderByCredentials } from "../utils/orders";
-import { getMapsDirectionsLink } from "../utils/googleMaps";
+import { getMapsDirectionsLink } from "../utils/maps";
 
 const prettyDate = (value) => {
   return value

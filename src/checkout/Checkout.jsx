@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { CheckCircle2, MapPin, ShieldCheck } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -20,7 +20,7 @@ const savedProfile = () => {
 function Checkout() {
   const { items, totals } = useCart();
   const navigate = useNavigate();
-  const profile = useMemo(savedProfile, []);
+  const profile = useMemo(() => savedProfile(), []);
 
   const [deliveryMethod, setDeliveryMethod] = useState("delivery");
   const [form, setForm] = useState({
@@ -49,6 +49,11 @@ function Checkout() {
 
     if (deliveryMethod === "delivery" && !form.deliveryLocation.addressText.trim()) {
       toast.error("Please enter your delivery address.");
+      return;
+    }
+
+    if (deliveryMethod === "delivery" && (form.deliveryLocation.latitude == null || form.deliveryLocation.longitude == null)) {
+      toast.error("Please select an address suggestion so the driver can navigate to you.");
       return;
     }
 
@@ -269,3 +274,4 @@ function Checkout() {
 }
 
 export default Checkout;
+

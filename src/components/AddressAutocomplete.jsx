@@ -1,13 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import { LocateFixed, MapPin, Search } from "lucide-react";
 import { EMPTY_LOCATION } from "../utils/address";
-import { getMapsEmbedSrc, hasGoogleMapsKey, loadGoogleMaps } from "../utils/googleMaps";
+import { reverseGeocode, searchAddress } from "../utils/maps";
 import { MOCK_ADDRESS_SUGGESTIONS } from "../data/mockAddresses";
+import AddressMapPreview from "./AddressMapPreview";
 
 // A single address field that gives typed suggestions as the customer
-// types (Google Places when an API key is configured, sample suggestions
-// otherwise), plus a "use my current location" button and a small map
-// preview once a spot is picked.
+// types, plus a "use my current location" button and a small map preview
+// once a spot is picked.
+//
+// Address search runs against OpenStreetMap's free Nominatim API - no API
+// key, billing account, or card required. If a lookup fails (e.g. no
+// network), it falls back to a short list of sample addresses so the UI
+// still works offline/in a demo.
 //
 // value / onChange always deal in this shape:
 //   { addressText, latitude, longitude, placeId, deliveryInstructions }
@@ -23,44 +28,22 @@ function AddressAutocomplete({
   placeholder = "Start typing your address...",
 }) {
   const location = value || EMPTY_LOCATION;
-  const usingLiveApi = hasGoogleMapsKey();
 
   const [query, setQuery] = useState(location.addressText || "");
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
   const [locating, setLocating] = useState(false);
-  const [mapsReady, setMapsReady] = useState(false);
+  const [offline, setOffline] = useState(false);
 
-  const autocompleteService = useRef(null);
-  const placesService = useRef(null);
-  const geocoder = useRef(null);
-  const sessionToken = useRef(null);
   const containerRef = useRef(null);
   const debounceRef = useRef(null);
+  const requestIdRef = useRef(0);
 
   // Keep the text field in sync if the parent resets/loads a saved value.
   useEffect(() => {
     setQuery(location.addressText || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.addressText]);
-
-  useEffect(() => {
-    if (!usingLiveApi) return undefined;
-    let cancelled = false;
-
-    loadGoogleMaps().then((google) => {
-      if (cancelled || !google) return;
-      autocompleteService.current = new google.maps.places.AutocompleteService();
-      placesService.current = new google.maps.places.PlacesService(document.createElement("div"));
-      geocoder.current = new google.maps.Geocoder();
-      sessionToken.current = new google.maps.places.AutocompleteSessionToken();
-      setMapsReady(true);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [usingLiveApi]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -72,41 +55,37 @@ function AddressAutocomplete({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  const fetchSuggestions = (text) => {
+  const mockSuggestionsFor = (text) => {
+    const lower = text.toLowerCase();
+    return MOCK_ADDRESS_SUGGESTIONS.filter((item) =>
+      item.formattedAddress.toLowerCase().includes(lower),
+    ).map((item) => ({
+      description: item.formattedAddress,
+      placeId: item.placeId,
+      latitude: item.latitude,
+      longitude: item.longitude,
+    }));
+  };
+
+  const fetchSuggestions = async (text) => {
     if (!text.trim()) {
       setSuggestions([]);
       return;
     }
 
-    if (usingLiveApi && mapsReady && autocompleteService.current) {
-      autocompleteService.current.getPlacePredictions(
-        { input: text, sessionToken: sessionToken.current },
-        (predictions, status) => {
-          if (status === "OK" && predictions) {
-            setSuggestions(
-              predictions.map((prediction) => ({
-                description: prediction.description,
-                placeId: prediction.place_id,
-              })),
-            );
-          } else {
-            setSuggestions([]);
-          }
-        },
-      );
-      return;
-    }
+    // Guards against an earlier, slower request overwriting a later one.
+    const requestId = ++requestIdRef.current;
 
-    const lower = text.toLowerCase();
-    setSuggestions(
-      MOCK_ADDRESS_SUGGESTIONS.filter((item) =>
-        item.formattedAddress.toLowerCase().includes(lower),
-      ).map((item) => ({
-        description: item.formattedAddress,
-        placeId: item.placeId,
-        mock: item,
-      })),
-    );
+    try {
+      const results = await searchAddress(text);
+      if (requestId !== requestIdRef.current) return;
+      setOffline(false);
+      setSuggestions(results);
+    } catch (error) {
+      if (requestId !== requestIdRef.current) return;
+      setOffline(true);
+      setSuggestions(mockSuggestionsFor(text));
+    }
   };
 
   const handleInputChange = (event) => {
@@ -119,48 +98,20 @@ function AddressAutocomplete({
     onChange({ ...location, addressText: text, latitude: null, longitude: null, placeId: "" });
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchSuggestions(text), 250);
+    debounceRef.current = setTimeout(() => fetchSuggestions(text), 400);
   };
 
   const selectSuggestion = (suggestion) => {
     setOpen(false);
-
-    if (suggestion.mock) {
-      const mock = suggestion.mock;
-      const next = {
-        ...location,
-        addressText: mock.formattedAddress,
-        latitude: mock.latitude,
-        longitude: mock.longitude,
-        placeId: mock.placeId,
-      };
-      setQuery(next.addressText);
-      onChange(next);
-      return;
-    }
-
-    if (usingLiveApi && mapsReady && placesService.current) {
-      placesService.current.getDetails(
-        {
-          placeId: suggestion.placeId,
-          fields: ["formatted_address", "geometry", "place_id"],
-          sessionToken: sessionToken.current,
-        },
-        (place, status) => {
-          if (status === "OK" && place) {
-            const next = {
-              ...location,
-              addressText: place.formatted_address || suggestion.description,
-              latitude: place.geometry?.location?.lat() ?? null,
-              longitude: place.geometry?.location?.lng() ?? null,
-              placeId: place.place_id || suggestion.placeId,
-            };
-            setQuery(next.addressText);
-            onChange(next);
-          }
-        },
-      );
-    }
+    const next = {
+      ...location,
+      addressText: suggestion.description,
+      latitude: suggestion.latitude,
+      longitude: suggestion.longitude,
+      placeId: suggestion.placeId,
+    };
+    setQuery(next.addressText);
+    onChange(next);
   };
 
   const useCurrentLocation = () => {
@@ -168,38 +119,19 @@ function AddressAutocomplete({
 
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
-
-        if (usingLiveApi && mapsReady && geocoder.current) {
-          geocoder.current.geocode(
-            { location: { lat: latitude, lng: longitude } },
-            (results, status) => {
-              setLocating(false);
-              const resolved = status === "OK" && results?.[0];
-              const next = {
-                ...location,
-                addressText: resolved
-                  ? results[0].formatted_address
-                  : `Current location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
-                latitude,
-                longitude,
-                placeId: resolved ? results[0].place_id : "",
-              };
-              setQuery(next.addressText);
-              onChange(next);
-            },
-          );
-          return;
-        }
+        const resolved = await reverseGeocode(latitude, longitude).catch(() => null);
 
         setLocating(false);
         const next = {
           ...location,
-          addressText: `Current location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
+          addressText: resolved
+            ? resolved.description
+            : `Current location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
           latitude,
           longitude,
-          placeId: "",
+          placeId: resolved ? resolved.placeId : "",
         };
         setQuery(next.addressText);
         onChange(next);
@@ -208,8 +140,6 @@ function AddressAutocomplete({
       { enableHighAccuracy: true, timeout: 8000 },
     );
   };
-
-  const mapSrc = getMapsEmbedSrc(location.latitude, location.longitude);
 
   return (
     <div ref={containerRef} className="relative">
@@ -259,24 +189,13 @@ function AddressAutocomplete({
         </ul>
       )}
 
-      {!usingLiveApi && (
+      {offline && (
         <p className="mt-1.5 text-xs text-dark-400">
-          Showing sample suggestions - connect a Google Maps API key for live address search.
+          Couldn't reach the address search service - showing sample suggestions instead.
         </p>
       )}
 
-      {mapSrc && (
-        <div className="mt-3 overflow-hidden rounded-xl border border-dark-100">
-          <iframe
-            title={`${label} map preview`}
-            src={mapSrc}
-            width="100%"
-            height="160"
-            style={{ border: 0 }}
-            loading="lazy"
-          />
-        </div>
-      )}
+      <AddressMapPreview latitude={location.latitude} longitude={location.longitude} />
 
       {showInstructions && (
         <label className="mt-3 block text-sm font-semibold text-dark-700">

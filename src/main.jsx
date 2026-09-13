@@ -34,12 +34,31 @@ import ForgotPassword from "./auth/ForgotPassword";
 import ResetPassword from "./auth/ResetPassword";
 import Profile from "./user/profile/Profile";
 
+
+
+import StaffLogin from "./staff/StaffLogin";
+import StaffDashboard from "./staff/StaffDashboard";
+import DriverDashboard from "./staff/DriverDashboard";
+import { isStaffSignedIn } from "./utils/staffAuth";
+
+
 function ProtectedRoute({ children }) {
   const location = useLocation();
   const isSignedIn = localStorage.getItem("resvill_auth_v1") === "true";
 
   if (!isSignedIn) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  return children;
+}
+
+
+function StaffProtectedRoute({ children }) {
+  const location = useLocation();
+
+  if (!isStaffSignedIn()) {
+    return <Navigate to="/staff/login" replace state={{ from: location.pathname }} />;
   }
 
   return children;
@@ -127,6 +146,27 @@ createRoot(document.getElementById("root")).render(
             element={<OrderTracker />}
           />
 
+
+          <Route path="staff/login" element={<StaffLogin />} />
+
+          <Route
+            path="staff"
+            element={
+              <StaffProtectedRoute>
+                <StaffDashboard />
+              </StaffProtectedRoute>
+            }
+          />
+
+          <Route
+            path="driver"
+            element={
+              <StaffProtectedRoute>
+                <DriverDashboard />
+              </StaffProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<NoPage />} />
 
         </Routes>
@@ -135,4 +175,6 @@ createRoot(document.getElementById("root")).render(
     </CartProvider>
   </StrictMode>,
 );
+
+
 
