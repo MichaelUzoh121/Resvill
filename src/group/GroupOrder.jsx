@@ -4,7 +4,7 @@ import Row2 from './Row2'
 import Row3 from './Row3'
 import Row4 from './Row4'
 
-function Shop() {
+function GroupOrder() {
   return (
     <div>
         <Row1/>
@@ -15,4 +15,4 @@ function Shop() {
   )
 }
 
-export default Shop
+export default GroupOrder

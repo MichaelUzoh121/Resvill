@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowRight,
   Clock3,
@@ -9,9 +10,16 @@ import {
   Utensils,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import JoinGroupModal from "./components/JoinGroupModal";
+import { getGroupParticipant } from "../utils/groupOrderStorage";
 
 function Row3() {
+  const navigate = useNavigate();
+  const { groupCode: urlGroupCode } = useParams();
+
   const [groupCode, setGroupCode] = useState("");
+  const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [selectedGroupCode, setSelectedGroupCode] = useState("");
 
   const activeGroups = [
     {
@@ -43,13 +51,49 @@ function Row3() {
     },
   ];
 
+  const extractGroupCode = (value) => {
+    const trimmedValue = value.trim();
+
+    if (!trimmedValue) {
+      return "";
+    }
+
+    try {
+      const url = new URL(trimmedValue);
+
+      const match = url.pathname.match(/\/group-order\/([^/]+)/i);
+
+      if (match?.[1]) {
+        return match[1].trim();
+      }
+    } catch {
+      // Not a URL, so treat it as a group code.
+    }
+
+    return trimmedValue;
+  };
+
   const handleJoin = (code = groupCode) => {
-    if (!code.trim()) {
+    const extractedCode = extractGroupCode(code);
+
+    if (!extractedCode) {
       toast.error("Enter a group code or invite link");
       return;
     }
 
-    toast.success(`Joining group ${code.toUpperCase()}...`);
+    const participant = getGroupParticipant();
+
+    const savedGroupCode = participant?.groupCode?.trim().toUpperCase();
+
+    const enteredGroupCode = extractedCode.toUpperCase();
+
+    if (participant && savedGroupCode === enteredGroupCode) {
+      navigate(`/group-order/${participant.groupCode}`);
+      return;
+    }
+
+    setSelectedGroupCode(extractedCode);
+    setJoinModalOpen(true);
   };
 
   const handleCopy = async (code) => {
@@ -60,6 +104,28 @@ function Row3() {
       toast.error("Unable to copy group code");
     }
   };
+
+  // useEffect(() => {
+  //   const code = urlGroupCode?.trim().toUpperCase();
+
+  //   if (!code) {
+  //     return;
+  //   }
+
+  //   setSelectedGroupCode(code);
+  //   setJoinModalOpen(true);
+  // }, [urlGroupCode]);
+
+  useEffect(() => {
+    const code = urlGroupCode?.trim().toUpperCase();
+
+    if (!code) {
+      return;
+    }
+
+    setSelectedGroupCode(code);
+    setJoinModalOpen(true);
+  }, [urlGroupCode]);
 
   return (
     <section className="bg-dark-50/60 py-16 sm:py-20 lg:py-24">
@@ -121,6 +187,15 @@ function Row3() {
               />
             </div>
 
+            {/* <button
+              type="button"
+              onClick={() => setJoinModalOpen(true)}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary-500 px-6 text-sm font-bold text-white transition-all hover:bg-primary-600 hover:shadow-hover"
+            >
+              Join Group
+              <ArrowRight size={17} />
+            </button> */}
+
             <button
               type="button"
               onClick={() => handleJoin()}
@@ -131,6 +206,12 @@ function Row3() {
             </button>
           </div>
         </div>
+
+        <JoinGroupModal
+          open={joinModalOpen}
+          onClose={() => setJoinModalOpen(false)}
+          initialGroupCode={selectedGroupCode}
+        />
 
         {/* Active Groups */}
         <div className="mt-14">

@@ -1,7 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import CreateGroupOrderModal from "./components/CreateGroupOrderModal";
+
 import { ArrowRight, Users, ShoppingBag, Utensils } from "lucide-react";
 
 function Row1() {
+  const navigate = useNavigate();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
   return (
     <section className="relative overflow-hidden rounded-3xl bg-primary-50 px-6 py-12 sm:px-10 lg:px-14 lg:py-16">
       {/* Decorative Background */}
@@ -35,6 +41,7 @@ function Row1() {
           {/* Actions */}
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <button
+              onClick={() => setShowCreateModal(true)}
               type="button"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-500 px-5 py-3.5 text-sm font-bold text-white transition-all hover:bg-primary-600 hover:shadow-hover"
             >
@@ -217,6 +224,18 @@ function Row1() {
           </div>
         </div>
       </div>
+
+      <CreateGroupOrderModal
+        open={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreated={({ groupOrder }) => {
+          const groupCode = groupOrder?.groupCode || groupOrder?.code;
+
+          if (groupCode) {
+            navigate(`/group-order/${groupCode}`);
+          }
+        }}
+      />
     </section>
   );
 }

@@ -1,0 +1,124 @@
+import React, { useRef } from "react";
+import { Camera, Mail, Phone } from "lucide-react";
+
+function formatMemberSince(dateValue) {
+  if (!dateValue) {
+    return "Member since";
+  }
+
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Member since";
+  }
+
+  return `Member since ${date.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  })}`;
+}
+
+function UserHeader({ user, onPhotoChange }) {
+  const fileInputRef = useRef(null);
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files?.[0];
+
+    event.target.value = "";
+
+    if (!file || !onPhotoChange) return;
+
+    onPhotoChange(file);
+  };
+
+  const name =
+    `${user?.firstname || ""} ${user?.lastname || ""}`.trim() || "User";
+
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const email = user?.email || "";
+
+  const phone = user?.phone || "";
+
+  const photoUrl = user?.profileImage || "";
+
+  const memberSince = formatMemberSince(user?.createdAt);
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-dark-200 bg-white shadow-soft">
+      <div className="h-24 bg-gradient-to-r from-primary-600 via-primary-500 to-accent-500 sm:h-32" />
+
+      <div className="relative px-5 pb-5 sm:px-7 sm:pb-7">
+        <div className="-mt-12 flex flex-col gap-5 sm:-mt-14 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex items-end gap-4">
+            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-primary-100 font-heading text-2xl font-extrabold text-primary-600 shadow-card sm:h-28 sm:w-28">
+              {photoUrl ? (
+                <img
+                  src={photoUrl}
+                  alt={`${name}'s profile photo`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initials
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              <button
+                type="button"
+                aria-label="Change profile photo"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full border-4 border-white bg-primary-500 text-white shadow-sm transition hover:bg-primary-600"
+              >
+                <Camera size={15} />
+              </button>
+            </div>
+
+            <div className="pb-1">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary-500">
+                Food lover
+              </p>
+
+              <h2 className="mt-1 text-xl font-extrabold text-dark-900 sm:text-2xl">
+                {name}
+              </h2>
+
+              <p className="mt-1 text-sm text-dark-600">
+                {memberSince}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-3 border-t border-dark-100 pt-5 sm:grid-cols-2">
+          <div className="flex items-center gap-3 text-sm text-dark-600">
+            <Mail size={17} className="text-primary-500" />
+
+            <span>{email || "Add your email"}</span>
+          </div>
+
+          <div className="flex items-center gap-3 text-sm text-dark-600">
+            <Phone size={17} className="text-primary-500" />
+
+            <span>{phone || "Add your phone number"}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default UserHeader;
+

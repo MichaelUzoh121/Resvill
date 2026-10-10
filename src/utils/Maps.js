@@ -1,70 +1,229 @@
-// Address search and geocoding via OpenStreetMap's free Nominatim API.
-// No API key, no billing account, no card required - this replaces the
-// old Google Places/Maps integration.
-//
-// Nominatim's usage policy (https://operations.osmfoundation.org/policies/nominatim/)
-// asks callers to keep requests to roughly one per second and to identify
-// the calling app; the browser's Referer header covers that for a
-// client-side app like this one. Keep the debounce in
-// AddressAutocomplete.jsx reasonable (250-500ms) rather than firing a
-// request on every keystroke.
+const GEOAPIFY_API_KEY =
+  import.meta.env.VITE_GEOAPIFY_API_KEY;
 
-const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
+const GEOCODING_URL =
+  "https://api.geoapify.com/v1/geocode";
 
-// Returns [{ description, placeId, latitude, longitude }] - already the
-// shape AddressAutocomplete expects for a suggestion.
-export async function searchAddress(query, { limit = 5, countryCodes } = {}) {
-  if (!query || !query.trim()) return [];
+const AUTOCOMPLETE_URL =
+  "https://api.geoapify.com/v1/geocode/autocomplete";
+
+const ensureApiKey = () => {
+  if (!GEOAPIFY_API_KEY) {
+    throw new Error(
+      "Geoapify API key is not configured.",
+    );
+  }
+};
+
+/*
+|--------------------------------------------------------------------------
+| Build a readable address
+|--------------------------------------------------------------------------
+*/
+
+const buildAddressText = (properties) => {
+  if (properties.formatted) {
+    return properties.formatted;
+  }
+
+  return [
+    properties.name,
+    properties.housenumber,
+    properties.street,
+    properties.suburb,
+    properties.district,
+    properties.city ||
+      properties.town ||
+      properties.village,
+    properties.state,
+    properties.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+};
+
+/*
+|--------------------------------------------------------------------------
+| Convert Geoapify result into our Resvill location shape
+|--------------------------------------------------------------------------
+*/
+
+const mapResult = (properties) => ({
+  description: buildAddressText(properties),
+
+  placeId:
+    properties.place_id ||
+    properties.datasource?.raw?.place_id ||
+    "",
+
+  name:
+    properties.name || "",
+
+  latitude: Number(properties.lat),
+
+  longitude: Number(properties.lon),
+
+  street:
+    properties.street || "",
+
+  houseNumber:
+    properties.housenumber || "",
+
+  city:
+    properties.city ||
+    properties.town ||
+    properties.village ||
+    properties.municipality ||
+    "",
+
+  state:
+    properties.state || "",
+
+  district:
+    properties.district || "",
+
+  suburb:
+    properties.suburb || "",
+
+  postcode:
+    properties.postcode || "",
+
+  country:
+    properties.country || "Nigeria",
+
+  countryCode:
+    properties.country_code || "ng",
+
+  landmark:
+    properties.name ||
+    properties.district ||
+    properties.suburb ||
+    "",
+});
+
+/*
+|--------------------------------------------------------------------------
+| Search Nigerian addresses + places
+|--------------------------------------------------------------------------
+*/
+
+export const searchAddress = async (query) => {
+  ensureApiKey();
+
+  const trimmedQuery = query.trim();
+
+  if (trimmedQuery.length < 3) {
+    return [];
+  }
 
   const params = new URLSearchParams({
-    format: "jsonv2",
-    q: query,
-    addressdetails: "1",
-    limit: String(limit),
+    text: trimmedQuery,
+
+    /*
+     * Restrict the search to Nigeria.
+     */
+    filter: "countrycode:ng",
+
+    /*
+     * Return enough results for the dropdown.
+     */
+    limit: "10",
+
+    format: "json",
+
+    apiKey: GEOAPIFY_API_KEY,
   });
-  if (countryCodes) params.set("countrycodes", countryCodes);
 
-  const response = await fetch(`${NOMINATIM_BASE}/search?${params.toString()}`, {
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) throw new Error("Address search failed");
+  const response = await fetch(
+    `${AUTOCOMPLETE_URL}?${params.toString()}`,
+  );
 
-  const results = await response.json();
-  return results.map((result) => ({
-    description: result.display_name,
-    placeId: `osm-${result.place_id}`,
-    latitude: parseFloat(result.lat),
-    longitude: parseFloat(result.lon),
-  }));
-}
+  if (!response.ok) {
+    throw new Error(
+      `Address search failed: ${response.status}`,
+    );
+  }
 
-// Turns a lat/lng (e.g. from the browser's geolocation) back into a
-// readable address - used by the "use my current location" button.
-export async function reverseGeocode(latitude, longitude) {
+  const data = await response.json();
+
+  const results = Array.isArray(data.results)
+    ? data.results
+    : [];
+
+  return results
+    .filter(
+      (result) =>
+        result.country_code === "ng",
+    )
+    .map(mapResult)
+    .filter(
+      (result) =>
+        result.description &&
+        Number.isFinite(result.latitude) &&
+        Number.isFinite(result.longitude),
+    );
+};
+
+/*
+|--------------------------------------------------------------------------
+| Reverse geocode current coordinates
+|--------------------------------------------------------------------------
+*/
+
+export const reverseGeocode = async (
+  latitude,
+  longitude,
+) => {
+  ensureApiKey();
+
   const params = new URLSearchParams({
-    format: "jsonv2",
     lat: String(latitude),
+
     lon: String(longitude),
+
+    format: "json",
+
+    apiKey: GEOAPIFY_API_KEY,
   });
 
-  const response = await fetch(`${NOMINATIM_BASE}/reverse?${params.toString()}`, {
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) return null;
+  const response = await fetch(
+    `${GEOCODING_URL}/search?${params.toString()}`,
+  );
 
-  const result = await response.json();
-  if (!result || result.error) return null;
+  if (!response.ok) {
+    throw new Error(
+      `Reverse geocoding failed: ${response.status}`,
+    );
+  }
 
-  return {
-    description: result.display_name,
-    placeId: result.place_id ? `osm-${result.place_id}` : "",
-  };
-}
+  const data = await response.json();
 
-// Link a dispatch rider can tap to open turn-by-turn navigation straight
-// to the customer's saved coordinates. This is just a URL scheme most map
-// apps understand - it needs no API key either way.
-export function getMapsDirectionsLink(latitude, longitude) {
-  if (latitude == null || longitude == null) return null;
-  return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
-}
+  const result = data.results?.find(
+    (item) =>
+      item.country_code === "ng",
+  );
+
+  if (!result) {
+    throw new Error(
+      "Unable to resolve this Nigerian location.",
+    );
+  }
+
+  return mapResult(result);
+};
+
+export const getMapsDirectionsLink = (
+  latitude,
+  longitude,
+) => {
+  if (
+    latitude == null ||
+    longitude == null
+  ) {
+    return "";
+  }
+
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    `${latitude},${longitude}`,
+  )}`;
+};

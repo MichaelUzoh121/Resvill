@@ -7,7 +7,9 @@ import {
   MessageSquare,
   Send,
   MapPin,
+  LoaderCircle,
 } from "lucide-react";
+import { createContactMessage } from "../services/contactService";
 import {
   FaFacebookF,
   FaInstagram,
@@ -15,6 +17,8 @@ import {
 } from "react-icons/fa";
 
 function Row2() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,19 +36,32 @@ function Row2() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    console.log("Contact message:", formData);
-    toast.success("Message sent! We'll get back to you shortly.");
+    if (isSubmitting) return;
 
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      subject: "",
-      message: "",
-    });
+    try {
+      setIsSubmitting(true);
+
+      await createContactMessage(formData);
+
+      toast.success("Message sent! We'll get back to you shortly.");
+
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "",
+        message: "",
+      });
+    } catch (error) {
+      toast.error(
+        error?.message || "Unable to send your message. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -196,10 +213,20 @@ function Row2() {
 
             <button
               type="submit"
-              className="mt-7 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-500 px-5 text-sm font-bold text-white transition-all hover:bg-primary-600 hover:shadow-hover"
+              disabled={isSubmitting}
+              className="mt-7 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-500 px-5 text-sm font-bold text-white transition-all hover:bg-primary-600 hover:shadow-hover disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Send Message
-              <Send size={16} />
+              {isSubmitting ? (
+                <>
+                  <LoaderCircle size={16} className="animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  Send Message
+                  <Send size={16} />
+                </>
+              )}
             </button>
           </form>
 

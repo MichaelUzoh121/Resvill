@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import toast from "react-hot-toast";
 import {
   CalendarDays,
   Clock3,
@@ -7,9 +8,13 @@ import {
   Users,
   User,
   PartyPopper,
+  LoaderCircle,
 } from "lucide-react";
+import { createReservation } from "../services/reservationService";
 
 function Row2() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     date: "",
@@ -28,10 +33,36 @@ function Row2() {
     }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    console.log("Reservation:", formData);
+    if (isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+
+      await createReservation({
+        ...formData,
+        guests: Number(formData.guests),
+      });
+
+      toast.success("Reservation request sent! We'll confirm the details with you.");
+
+      setFormData({
+        name: "",
+        date: "",
+        guests: 2,
+        phone: "",
+        email: "",
+        time: "",
+      });
+    } catch (error) {
+      toast.error(
+        error?.message || "Unable to submit your reservation. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -259,9 +290,17 @@ function Row2() {
             {/* Submit */}
             <button
               type="submit"
-              className="mt-7 h-12 w-full rounded-xl bg-primary-500 px-5 text-sm font-bold text-white transition-all hover:bg-primary-600 hover:shadow-hover"
+              disabled={isSubmitting}
+              className="mt-7 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-500 px-5 text-sm font-bold text-white transition-all hover:bg-primary-600 hover:shadow-hover disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Reserve Food for My Event
+              {isSubmitting ? (
+                <>
+                  <LoaderCircle size={17} className="animate-spin" />
+                  Sending Reservation...
+                </>
+              ) : (
+                "Reserve Food for My Event"
+              )}
             </button>
 
             <p className="mt-3 text-center text-xs leading-5 text-dark-400">

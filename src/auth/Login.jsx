@@ -11,42 +11,73 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 
+import { useAuth } from "../hooks/useAuth";
+import { getErrorMessage } from "../utils/errorHandler";
+import { ROLES } from "../constants/roles";
+
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const submit = (event) => {
+  const getRedirectPath = (user) => {
+    switch (user?.role) {
+      case ROLES.ADMIN:
+        return "/admin";
+
+      case ROLES.STAFF:
+        return "/staff";
+
+      case ROLES.DELIVERY:
+        return "/driver";
+
+      case ROLES.CUSTOMER:
+      default:
+        return location.state?.from?.pathname || "/account";
+    }
+  };
+
+  const submit = async (event) => {
     event.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
 
     setIsSubmitting(true);
 
-    const savedProfile = JSON.parse(
-      localStorage.getItem("resvill_profile_v1") || "{}",
-    );
+    try {
+      const response = await login({
+        email: email.trim(),
+        password,
+      });
 
-    localStorage.setItem(
-      "resvill_profile_v1",
-      JSON.stringify({
-        ...savedProfile,
-        email,
-      }),
-    );
-    localStorage.setItem("resvill_auth_v1", "true");
-    window.dispatchEvent(new Event("resvill-auth-changed"));
+      const user = response?.data?.user;
 
-    setTimeout(() => {
+      if (!user) {
+        throw new Error("Login was successful, but user information was not returned.");
+      }
+
       toast.success("Welcome back to Resvill!");
-      navigate(location.state?.from || "/checkout", { replace: true });
-    }, 500);
+
+      navigate(getRedirectPath(user), {
+        replace: true,
+      });
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-dark-50/60 px-4 py-8 sm:px-6 sm:py-12">
+    <main className="bg-dark-50/60 px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto grid max-w-6xl overflow-hidden rounded-3xl border border-dark-100 bg-white shadow-card lg:grid-cols-2">
         {/* Welcome panel */}
         <section className="relative hidden overflow-hidden bg-dark-950 p-10 text-white lg:flex lg:min-h-[650px] lg:flex-col lg:justify-between">
@@ -88,6 +119,7 @@ function Login() {
 
             <div>
               <p className="font-bold">Freshly made for you</p>
+
               <p className="mt-1 text-sm text-dark-300">
                 Order your favorites in just a few clicks.
               </p>
@@ -127,6 +159,7 @@ function Login() {
             </div>
 
             <form onSubmit={submit} className="space-y-5">
+              {/* Email */}
               <label className="block text-sm font-bold text-dark-700">
                 Email address
 
@@ -139,6 +172,7 @@ function Login() {
                   <input
                     required
                     type="email"
+                    autoComplete="email"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     placeholder="you@example.com"
@@ -147,6 +181,7 @@ function Login() {
                 </div>
               </label>
 
+              {/* Password */}
               <label className="block text-sm font-bold text-dark-700">
                 Password
 
@@ -159,6 +194,7 @@ function Login() {
                   <input
                     required
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="Enter your password"
@@ -186,6 +222,7 @@ function Login() {
                 </div>
               </label>
 
+              {/* Remember / Forgot */}
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2 text-dark-500">
                   <input
@@ -196,25 +233,30 @@ function Login() {
                 </label>
 
                 <Link
-                  to="/forgot-password"
+                  to="/auth/forgot-password"
                   className="font-bold text-primary-500 hover:text-primary-600"
                 >
                   Forgot password?
                 </Link>
               </div>
 
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="group flex w-full items-center justify-center gap-2 rounded-xl bg-primary-500 px-5 py-3.5 font-bold text-white transition-all hover:bg-primary-600 hover:shadow-hover disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSubmitting ? "Signing in..." : "Login"}
+                {isSubmitting ? (
+                  "Signing in..."
+                ) : (
+                  <>
+                    Login
 
-                {!isSubmitting && (
-                  <ArrowRight
-                    size={18}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
+                    <ArrowRight
+                      size={18}
+                      className="transition-transform group-hover:translate-x-1"
+                    />
+                  </>
                 )}
               </button>
             </form>
@@ -223,7 +265,7 @@ function Login() {
               New to Resvill?{" "}
               <Link
                 className="font-bold text-primary-500 hover:text-primary-600"
-                to="/register"
+                to="/auth/register"
               >
                 Create an account
               </Link>
@@ -236,5 +278,3 @@ function Login() {
 }
 
 export default Login;
-
-

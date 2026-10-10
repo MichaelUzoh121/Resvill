@@ -12,8 +12,13 @@ import {
   UserRound,
 } from "lucide-react";
 
+import { useAuth } from "../hooks/useAuth";
+import { getErrorMessage } from "../utils/errorHandler";
+
 function Register() {
   const navigate = useNavigate();
+
+  const { register: registerUser } = useAuth();
 
   const [form, setForm] = useState({
     name: "",
@@ -35,34 +40,61 @@ function Register() {
     }));
   };
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
 
     if (form.password !== form.confirmPassword) {
       toast.error("Passwords do not match.");
       return;
     }
 
+    const trimmedName = form.name.trim();
+
+    if (!trimmedName) {
+      toast.error("Please enter your full name.");
+      return;
+    }
+
+    const nameParts = trimmedName.split(/\s+/);
+
+    const firstname = nameParts[0];
+    const lastname = nameParts.slice(1).join(" ");
+
+    if (!lastname) {
+      toast.error("Please enter your first and last name.");
+      return;
+    }
+
     setIsSubmitting(true);
 
-    localStorage.setItem(
-      "resvill_profile_v1",
-      JSON.stringify({
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-      }),
-    );
-    localStorage.setItem("resvill_auth_v1", "true");
-    window.dispatchEvent(new Event("resvill-auth-changed"));
+    try {
+      await registerUser({
+        firstname,
+        lastname,
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        password: form.password,
+      });
 
-    toast.success(
-      "Account created successfully. Welcome to Resvill!",
-    );
+      toast.success(
+        "Account created successfully. Please verify your email.",
+      );
 
-    setTimeout(() => {
-      navigate("/checkout");
-    }, 1200);
+      navigate("/auth/resend-verification", {
+        replace: true,
+        state: {
+          registeredEmail: form.email.trim(),
+        },
+      });
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -109,7 +141,7 @@ function Register() {
 
             <p className="mt-2 text-sm leading-6 text-primary-50">
               Your saved information will be available at checkout
-              during this test version.
+              once your account is verified.
             </p>
           </div>
         </section>
@@ -146,6 +178,7 @@ function Register() {
             </div>
 
             <form onSubmit={submit} className="space-y-4">
+              {/* Full name */}
               <label className="block text-sm font-bold text-dark-700">
                 Full name
 
@@ -161,11 +194,13 @@ function Register() {
                     value={form.name}
                     onChange={update}
                     placeholder="Your full name"
+                    autoComplete="name"
                     className="w-full rounded-xl border border-dark-200 bg-dark-50/40 py-3.5 pl-12 pr-4 font-normal outline-none transition-all placeholder:text-dark-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10"
                   />
                 </div>
               </label>
 
+              {/* Email */}
               <label className="block text-sm font-bold text-dark-700">
                 Email address
 
@@ -182,11 +217,13 @@ function Register() {
                     value={form.email}
                     onChange={update}
                     placeholder="you@example.com"
+                    autoComplete="email"
                     className="w-full rounded-xl border border-dark-200 bg-dark-50/40 py-3.5 pl-12 pr-4 font-normal outline-none transition-all placeholder:text-dark-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10"
                   />
                 </div>
               </label>
 
+              {/* Phone */}
               <label className="block text-sm font-bold text-dark-700">
                 Phone number
 
@@ -203,11 +240,13 @@ function Register() {
                     value={form.phone}
                     onChange={update}
                     placeholder="0800 000 0000"
+                    autoComplete="tel"
                     className="w-full rounded-xl border border-dark-200 bg-dark-50/40 py-3.5 pl-12 pr-4 font-normal outline-none transition-all placeholder:text-dark-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10"
                   />
                 </div>
               </label>
 
+              {/* Password */}
               <label className="block text-sm font-bold text-dark-700">
                 Password
 
@@ -225,6 +264,7 @@ function Register() {
                     value={form.password}
                     onChange={update}
                     placeholder="At least 6 characters"
+                    autoComplete="new-password"
                     className="w-full rounded-xl border border-dark-200 bg-dark-50/40 py-3.5 pl-12 pr-12 font-normal outline-none transition-all placeholder:text-dark-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10"
                   />
 
@@ -249,6 +289,7 @@ function Register() {
                 </div>
               </label>
 
+              {/* Confirm password */}
               <label className="block text-sm font-bold text-dark-700">
                 Confirm password
 
@@ -262,12 +303,15 @@ function Register() {
                     required
                     minLength={6}
                     type={
-                      showConfirmPassword ? "text" : "password"
+                      showConfirmPassword
+                        ? "text"
+                        : "password"
                     }
                     name="confirmPassword"
                     value={form.confirmPassword}
                     onChange={update}
                     placeholder="Repeat your password"
+                    autoComplete="new-password"
                     className="w-full rounded-xl border border-dark-200 bg-dark-50/40 py-3.5 pl-12 pr-12 font-normal outline-none transition-all placeholder:text-dark-400 focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-500/10"
                   />
 
@@ -294,6 +338,7 @@ function Register() {
                 </div>
               </label>
 
+              {/* Terms */}
               <label className="flex items-start gap-3 pt-1 text-xs leading-5 text-dark-500">
                 <input
                   required
@@ -303,10 +348,11 @@ function Register() {
 
                 <span>
                   I agree to receive order updates and accept the
-                  Resvill terms for this test account.
+                  Resvill terms for this account.
                 </span>
               </label>
 
+              {/* Submit */}
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -329,7 +375,7 @@ function Register() {
               Already registered?{" "}
               <Link
                 className="font-bold text-primary-500 hover:text-primary-600"
-                to="/login"
+                to="/auth/login"
               >
                 Login instead
               </Link>
@@ -342,6 +388,3 @@ function Register() {
 }
 
 export default Register;
-
-
-
