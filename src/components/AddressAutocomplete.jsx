@@ -4,7 +4,7 @@ import { LocateFixed, MapPin, Search, Loader2 } from "lucide-react";
 
 import { EMPTY_LOCATION } from "../utils/address";
 
-import { reverseGeocode, searchAddress } from "../utils/maps";
+import { reverseGeocode, searchAddress } from "../utils/Maps";
 
 import AddressMapPreview from "./AddressMapPreview";
 
