@@ -11,8 +11,13 @@ import {
   ChevronDown,
   UserRound,
   LayoutGrid,
+  LayoutDashboard,
 } from "lucide-react";
 import { HiOutlineUserGroup } from "react-icons/hi2";
+import { useAuth } from "../hooks/useAuth";
+import { useNotifications } from "../hooks/useNotifications";
+import { ROUTES } from "../constants/routes";
+import { ROLE_DASHBOARD_ROUTES, ROLES } from "../constants/roles";
 
 const navigationLinks = [
   {
@@ -58,33 +63,25 @@ function Sidebar({ isOpen, onClose }) {
   const [expandedMenu, setExpandedMenu] = useState(null);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
-  const isSignedIn = localStorage.getItem("resvill_auth_v1") === "true";
-  const profile = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("resvill_profile_v1") || "{}");
-    } catch {
-      return {};
-    }
-  })();
-  const notifications = [
-    {
-      id: 1,
-      title: "Welcome to Resvill",
-      message: "Your favorite meals are only a few clicks away.",
-      time: "Just now",
-    },
-    {
-      id: 2,
-      title: "Order updates coming soon",
-      message: "You will see your order status here after checkout.",
-      time: "Today",
-    },
-  ];
+  const { user, isAuthenticated, logout } = useAuth();
+  const { notifications = [], markRead } = useNotifications();
+  const isCustomer = isAuthenticated && user?.role === ROLES.CUSTOMER;
+  const dashboardPath = ROLE_DASHBOARD_ROUTES[user?.role];
+  const visibleNavigationLinks = dashboardPath
+    ? [
+        { label: "Dashboard", path: dashboardPath, icon: LayoutDashboard },
+        ...navigationLinks,
+      ]
+    : navigationLinks;
 
-  const signOut = () => {
-    localStorage.removeItem("resvill_auth_v1");
-    onClose();
-    navigate("/");
+  const signOut = async () => {
+    try {
+      await logout();
+      onClose();
+      navigate(ROUTES.HOME, { replace: true });
+    } catch (error) {
+      console.error("Failed to sign out:", error);
+    }
   };
 
   if (!isOpen) return null;
@@ -133,9 +130,14 @@ function Sidebar({ isOpen, onClose }) {
         {/* Sidebar Nav Links */}
         <nav className="flex flex-1 flex-col overflow-y-auto px-5 py-6">
           <div className="space-y-1">
-            {navigationLinks.map((link) => {
+            {visibleNavigationLinks.map((link) => {
               const Icon = link.icon;
-              const isActive = location.pathname === link.path;
+              const isActive =
+                location.pathname === link.path ||
+                link.subItems?.some((sub) => location.pathname === sub.path) ||
+                (dashboardPath &&
+                  link.path === dashboardPath &&
+                  location.pathname.startsWith(dashboardPath));
               const hasSub = Boolean(link.subItems);
               const isExpanded = expandedMenu === link.label;
 
@@ -196,7 +198,8 @@ function Sidebar({ isOpen, onClose }) {
               );
             })}
 
-            <div>
+            {isCustomer && (
+              <div>
               <button
                 type="button"
                 onClick={() => setIsNotificationsOpen((current) => !current)}
@@ -208,7 +211,10 @@ function Sidebar({ isOpen, onClose }) {
                   Notifications
                 </span>
                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-500 px-1 text-[10px] font-bold text-white">
-                  {notifications.length}
+                  {
+                    notifications.filter((notification) => !notification.isRead)
+                      .length
+                  }
                 </span>
               </button>
 
@@ -216,7 +222,12 @@ function Sidebar({ isOpen, onClose }) {
                 <div className="mx-2 space-y-2 rounded-2xl bg-primary-50 p-3">
                   {notifications.map((notification) => (
                     <div
-                      key={notification.id}
+                      key={notification._id}
+                      onClick={() =>
+                        !notification.isRead && markRead(notification._id)
+                      }
+                      role="button"
+                      tabIndex={0}
                       className="border-b border-primary-100 pb-2 last:border-0 last:pb-0"
                     >
                       <p className="text-xs font-extrabold text-dark-900">
@@ -226,15 +237,18 @@ function Sidebar({ isOpen, onClose }) {
                         {notification.message}
                       </p>
                       <p className="mt-1 text-[10px] font-bold text-dark-400">
-                        {notification.time}
+                        {notification.createdAt
+                          ? new Date(notification.createdAt).toLocaleDateString()
+                          : ""}
                       </p>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
+              </div>
+            )}
 
-            {isSignedIn && (
+            {isCustomer && (
               <div>
                 <button
                   type="button"
@@ -255,21 +269,23 @@ function Sidebar({ isOpen, onClose }) {
                 {isAccountOpen && (
                   <div className="mx-2 mt-1 rounded-2xl border border-dark-100 bg-dark-50 p-3">
                     <p className="truncate text-xs font-extrabold text-dark-950">
-                      {profile.name || "Resvill customer"}
+                      {[user?.firstname, user?.lastname]
+                        .filter(Boolean)
+                        .join(" ") || "Resvill customer"}
                     </p>
                     <p className="mt-1 truncate text-[11px] text-dark-500">
-                      {profile.email || "Account details"}
+                      {user?.email || "Account details"}
                     </p>
                     <div className="mt-2 space-y-1 border-t border-dark-100 pt-2">
                       <Link
-                        to="/user/profile"
+                        to={ROUTES.PROFILE}
                         onClick={onClose}
                         className="block rounded-lg px-2 py-2 text-xs font-bold text-dark-700 hover:bg-white hover:text-primary-500"
                       >
                         Profile
                       </Link>
                       <Link
-                        to="/order-history"
+                        to={ROUTES.ORDERS}
                         onClick={onClose}
                         className="block rounded-lg px-2 py-2 text-xs font-bold text-dark-700 hover:bg-white hover:text-primary-500"
                       >
@@ -301,7 +317,24 @@ function Sidebar({ isOpen, onClose }) {
               Order Now
             </Link>
 
-            {isSignedIn ? (
+            {!isAuthenticated ? (
+              <div className="grid grid-cols-2 gap-3">
+                <Link
+                  to={ROUTES.LOGIN}
+                  onClick={onClose}
+                  className="flex items-center justify-center rounded-xl border border-dark-200 py-3 text-xs font-extrabold text-dark-700 transition-colors hover:border-primary-500 hover:text-primary-500"
+                >
+                  Login
+                </Link>
+                <Link
+                  to={ROUTES.REGISTER}
+                  onClick={onClose}
+                  className="flex items-center justify-center rounded-xl bg-primary-500 py-3 text-xs font-extrabold text-white transition-colors hover:bg-primary-600"
+                >
+                  Register
+                </Link>
+              </div>
+            ) : (
               <button
                 type="button"
                 onClick={signOut}
@@ -309,7 +342,7 @@ function Sidebar({ isOpen, onClose }) {
               >
                 Logout
               </button>
-            ) : null}
+            )}
           </div>
         </nav>
       </aside>

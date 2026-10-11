@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   ChevronDown,
+  LayoutDashboard,
   LogOut,
   Menu,
   ShoppingBag,
@@ -15,7 +16,7 @@ import Sidebar from "./Sidebar";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../hooks/useAuth";
 import { ROUTES } from "../constants/routes";
-import { ROLES } from "../constants/roles";
+import { ROLE_DASHBOARD_ROUTES, ROLES } from "../constants/roles";
 import { useNotifications } from "../hooks/useNotifications";
 
 function Header() {
@@ -25,6 +26,7 @@ function Header() {
 
   const { itemCount } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
+  const location = useLocation();
 
  
   const { notifications: notificationData, markRead } = useNotifications();
@@ -35,6 +37,7 @@ function Header() {
   const navigate = useNavigate();
 
   const isCustomer = isAuthenticated && user?.role === ROLES.CUSTOMER;
+  const dashboardPath = ROLE_DASHBOARD_ROUTES[user?.role];
 
   const displayName =
     user?.firstname && user?.lastname
@@ -44,7 +47,7 @@ function Header() {
   const displayEmail = user?.email || "Sign in to manage your account";
 
   const unreadNotificationCount = notifications.filter(
-    (notification) => notification.unread,
+    (notification) => !notification.isRead,
   ).length;
 
   const signOut = async () => {
@@ -195,6 +198,20 @@ function Header() {
                 </span>
               )}
             </Link>
+
+            {dashboardPath && (
+              <Link
+                to={dashboardPath}
+                className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
+                  location.pathname.startsWith(dashboardPath)
+                    ? "bg-primary-50 text-primary-600"
+                    : "text-dark-800 hover:bg-primary-50 hover:text-primary-500"
+                }`}
+              >
+                <LayoutDashboard size={17} strokeWidth={1.8} />
+                Dashboard
+              </Link>
+            )}
 
             {/* Customer Account */}
             {isCustomer ? (

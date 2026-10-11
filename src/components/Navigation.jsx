@@ -19,9 +19,9 @@ const navigationLinks = [
     label: "Pages",
     path: "/about",
     subItems: [
-      { label: "About Us", path: "/about" },
+      { label: "About", path: "/about" },
       { label: "Gallery", path: "/gallery" },
-      { label: "FAQ's", path: "/faq" },
+      { label: "FAQs", path: "/faq" },
     ],
   },
   {
@@ -29,7 +29,7 @@ const navigationLinks = [
     path: "/reservation",
   },
   {
-    label: "Contact",
+    label: "Contact Us",
     path: "/contact",
   },
 ];
@@ -41,7 +41,9 @@ function Navigation() {
   return (
     <nav className="hidden items-center gap-8 lg:flex">
       {navigationLinks.map((link) => {
-        const isActive = location.pathname === link.path;
+        const isActive =
+          location.pathname === link.path ||
+          link.subItems?.some((item) => location.pathname === item.path);
         const hasSubItems = Boolean(link.subItems);
 
         return (
@@ -51,8 +53,8 @@ function Navigation() {
             onMouseEnter={() => hasSubItems && setActiveDropdown(link.label)}
             onMouseLeave={() => hasSubItems && setActiveDropdown(null)}
           >
-            <a
-              href={link.path}
+            <Link
+              to={link.path}
               className={`flex items-center gap-1 py-2 text-xs font-black uppercase tracking-wider transition-colors ${
                 isActive
                   ? "text-primary-500"
@@ -61,19 +63,19 @@ function Navigation() {
             >
               {link.label}
               {hasSubItems && <ChevronDown size={14} className="mt-0.5" />}
-            </a>
+            </Link>
 
             {/* Dropdown Menu */}
             {hasSubItems && activeDropdown === link.label && (
               <div className="absolute top-full left-0 z-50 w-48 rounded-2xl bg-white p-2 shadow-2xl border border-dark-100">
                 {link.subItems.map((sub) => (
-                  <a
+                  <Link
                     key={sub.path}
-                    href={sub.path}
+                    to={sub.path}
                     className="block rounded-xl px-4 py-2.5 text-xs font-bold text-dark-700 transition-colors hover:bg-primary-50 hover:text-primary-500"
                   >
                     {sub.label}
-                  </a>
+                  </Link>
                 ))}
               </div>
             )}
