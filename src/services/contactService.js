@@ -9,6 +9,21 @@ export const createContactMessage = async (contactData) => {
     message: String(contactData.message || "").trim(),
   };
 
-  const response = await api.post("/contact", payload);
-  return response.data;
+  try {
+    const response = await api.post("/contact", payload);
+    return response.data;
+  } catch (error) {
+    const validationMessages = Object.values(error?.data?.errors || {}).filter(
+      (message) => typeof message === "string" && message.trim(),
+    );
+
+    if (validationMessages.length > 0) {
+      throw {
+        ...error,
+        message: validationMessages.join(" "),
+      };
+    }
+
+    throw error;
+  }
 };
