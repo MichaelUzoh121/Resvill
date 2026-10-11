@@ -1,8 +1,4 @@
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   getNotifications,
@@ -13,126 +9,79 @@ import {
 
 import { toast } from "react-hot-toast";
 
+const normalizeNotifications = (response) => {
+  const candidates = [
+    response,
+    response?.data,
+    response?.notifications,
+    response?.data?.notifications,
+    response?.data?.data,
+    response?.data?.data?.notifications,
+  ];
+
+  return candidates.find(Array.isArray) || [];
+};
 
 export const useNotifications = () => {
-
   const queryClient = useQueryClient();
 
-
-
   const notificationsQuery = useQuery({
+    queryKey: ["notifications"],
 
-    queryKey:[
-      "notifications"
-    ],
+    queryFn: getNotifications,
 
-    queryFn:
-      getNotifications,
+    select: normalizeNotifications,
 
-    staleTime:
-      1000 * 60 * 2,
+    staleTime: 1000 * 60 * 2,
 
+    refetchInterval: 1000 * 30,
   });
-
-
 
   const markReadMutation = useMutation({
+    mutationFn: markNotificationAsRead,
 
-    mutationFn:
-      markNotificationAsRead,
-
-
-    onSuccess:()=>{
-
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey:[
-          "notifications"
-        ],
+        queryKey: ["notifications"],
       });
-
     },
 
-    onError:()=>{
-
-      toast.error(
-        "Unable to update notification"
-      );
-
+    onError: () => {
+      toast.error("Unable to update notification");
     },
-
   });
-
-
 
   const markAllReadMutation = useMutation({
+    mutationFn: markAllNotificationsAsRead,
 
-    mutationFn:
-      markAllNotificationsAsRead,
-
-
-    onSuccess:()=>{
-
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey:[
-          "notifications"
-        ],
+        queryKey: ["notifications"],
       });
 
-      toast.success(
-        "Notifications marked as read"
-      );
-
+      toast.success("Notifications marked as read");
     },
-
   });
-
-
 
   const deleteMutation = useMutation({
+    mutationFn: deleteNotification,
 
-    mutationFn:
-      deleteNotification,
-
-
-    onSuccess:()=>{
-
+    onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey:[
-          "notifications"
-        ],
+        queryKey: ["notifications"],
       });
-
     },
-
   });
 
-
-
   return {
+    // `select` above already unwraps the backend response to an array.
+    notifications: notificationsQuery.data || [],
 
-    notifications:
-      notificationsQuery.data?.data || [],
+    loading: notificationsQuery.isLoading,
+    error: notificationsQuery.isError,
 
-
-    loading:
-      notificationsQuery.isLoading,
-
-
-    error:
-      notificationsQuery.isError,
-
-
-    markRead:
-      markReadMutation.mutateAsync,
-
-
-    markAllRead:
-      markAllReadMutation.mutateAsync,
-
-
-    removeNotification:
-      deleteMutation.mutateAsync,
-
+    markRead: markReadMutation.mutateAsync,
+    markAll: markAllReadMutation.mutateAsync,
+    removeNotification: deleteMutation.mutateAsync,
   };
-
 };

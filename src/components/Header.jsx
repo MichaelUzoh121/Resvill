@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -23,6 +23,9 @@ function Header() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const accountMenuRef = useRef(null);
+  const desktopNotificationsMenuRef = useRef(null);
+  const mobileNotificationsMenuRef = useRef(null);
 
   const { itemCount } = useCart();
   const { user, isAuthenticated, logout } = useAuth();
@@ -49,6 +52,59 @@ function Header() {
   const unreadNotificationCount = notifications.filter(
     (notification) => !notification.isRead,
   ).length;
+
+  useEffect(() => {
+    if (!isAccountOpen) return undefined;
+
+    const closeOnOutsideClick = (event) => {
+      if (!accountMenuRef.current?.contains(event.target)) {
+        setIsAccountOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsAccountOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isAccountOpen]);
+
+  useEffect(() => {
+    if (!isNotificationsOpen) return undefined;
+
+    const closeOnOutsideClick = (event) => {
+      const clickedInsideDesktopMenu =
+        desktopNotificationsMenuRef.current?.contains(event.target);
+      const clickedInsideMobileMenu =
+        mobileNotificationsMenuRef.current?.contains(event.target);
+
+      if (!clickedInsideDesktopMenu && !clickedInsideMobileMenu) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isNotificationsOpen]);
 
   const signOut = async () => {
     try {
@@ -93,7 +149,7 @@ function Header() {
           <div className="hidden items-center gap-2 md:flex">
             {/* Notifications - Customers Only */}
             {isCustomer && (
-              <div className="relative">
+              <div ref={desktopNotificationsMenuRef} className="relative">
                 <button
                   type="button"
                   aria-label="Notifications"
@@ -111,8 +167,8 @@ function Header() {
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-dark-100 bg-white p-3 shadow-card">
-                    <div className="flex items-center justify-between px-2 py-2">
+                  <div className="absolute right-0 top-12 z-[70] flex max-h-[calc(100dvh-8rem)] w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-dark-100 bg-white p-3 shadow-card sm:w-96">
+                    <div className="flex shrink-0 items-center justify-between px-2 py-2">
                       <h2 className="font-heading text-base font-extrabold text-dark-950">
                         Notifications
                       </h2>
@@ -122,7 +178,7 @@ function Header() {
                       </span>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="min-h-0 space-y-1 overflow-y-auto overscroll-contain">
                       {notifications.length > 0 ? (
                         notifications.map((notification) => (
                           // <div
@@ -215,7 +271,7 @@ function Header() {
 
             {/* Customer Account */}
             {isCustomer ? (
-              <div className="relative">
+              <div ref={accountMenuRef} className="relative">
                 <button
                   type="button"
                   aria-label="Open account menu"
@@ -306,7 +362,7 @@ function Header() {
           <div className="flex items-center gap-1 md:hidden">
             {/* Notifications - Customers Only */}
             {isCustomer && (
-              <div className="relative">
+              <div ref={mobileNotificationsMenuRef} className="relative">
                 <button
                   type="button"
                   aria-label="Notifications"
@@ -324,8 +380,8 @@ function Header() {
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-dark-100 bg-white p-3 shadow-card">
-                    <div className="flex items-center justify-between px-2 py-2">
+                  <div className="fixed right-2 top-20 z-[70] flex max-h-[calc(100dvh-6rem)] w-[calc(100vw-1rem)] max-w-sm flex-col overflow-hidden rounded-2xl border border-dark-100 bg-white p-3 shadow-card">
+                    <div className="flex shrink-0 items-center justify-between px-2 py-2">
                       <h2 className="font-heading text-base font-extrabold text-dark-950">
                         Notifications
                       </h2>
@@ -335,7 +391,7 @@ function Header() {
                       </span>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="min-h-0 space-y-1 overflow-y-auto overscroll-contain">
                       {notifications.length > 0 ? (
                         notifications.map((notification) => (
                           // <div

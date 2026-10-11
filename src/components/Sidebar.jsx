@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Bell,
   Home,
   Utensils,
   Calendar,
@@ -15,7 +14,6 @@ import {
 } from "lucide-react";
 import { HiOutlineUserGroup } from "react-icons/hi2";
 import { useAuth } from "../hooks/useAuth";
-import { useNotifications } from "../hooks/useNotifications";
 import { ROUTES } from "../constants/routes";
 import { ROLE_DASHBOARD_ROUTES, ROLES } from "../constants/roles";
 
@@ -61,10 +59,8 @@ function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedMenu, setExpandedMenu] = useState(null);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
-  const { notifications = [], markRead } = useNotifications();
   const isCustomer = isAuthenticated && user?.role === ROLES.CUSTOMER;
   const dashboardPath = ROLE_DASHBOARD_ROUTES[user?.role];
   const visibleNavigationLinks = dashboardPath
@@ -197,56 +193,6 @@ function Sidebar({ isOpen, onClose }) {
                 </div>
               );
             })}
-
-            {isCustomer && (
-              <div>
-              <button
-                type="button"
-                onClick={() => setIsNotificationsOpen((current) => !current)}
-                aria-expanded={isNotificationsOpen}
-                className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-extrabold text-dark-800 transition-colors hover:bg-dark-50 hover:text-primary-500"
-              >
-                <span className="flex items-center gap-3">
-                  <Bell size={19} strokeWidth={2} />
-                  Notifications
-                </span>
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-500 px-1 text-[10px] font-bold text-white">
-                  {
-                    notifications.filter((notification) => !notification.isRead)
-                      .length
-                  }
-                </span>
-              </button>
-
-              {isNotificationsOpen && (
-                <div className="mx-2 space-y-2 rounded-2xl bg-primary-50 p-3">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification._id}
-                      onClick={() =>
-                        !notification.isRead && markRead(notification._id)
-                      }
-                      role="button"
-                      tabIndex={0}
-                      className="border-b border-primary-100 pb-2 last:border-0 last:pb-0"
-                    >
-                      <p className="text-xs font-extrabold text-dark-900">
-                        {notification.title}
-                      </p>
-                      <p className="mt-1 text-[11px] leading-4 text-dark-600">
-                        {notification.message}
-                      </p>
-                      <p className="mt-1 text-[10px] font-bold text-dark-400">
-                        {notification.createdAt
-                          ? new Date(notification.createdAt).toLocaleDateString()
-                          : ""}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-              </div>
-            )}
 
             {isCustomer && (
               <div>

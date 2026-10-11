@@ -87,7 +87,7 @@ function UserHeader({ user, onPhotoChange }) {
             </div>
 
             <div className="pb-1">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary-500">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-accent-500 ">
                 Food lover
               </p>
 
